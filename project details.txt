@@ -1,0 +1,12 @@
+T14 — Personalised Indian Recommender
+The problem. Recommendation systems are the most-used ML technique in industry. Build
+a small but real one for an Indian-flavour domain.
+What you will build. Streamlit app: query input (text or chips) → ranked card list →
+“why?” below each item → “save to favourites”.
+Skills. Sentence embeddings, cosine similarity retrieval, LLM justification generation, no training.
+Common base. sentence-transformers/all-MiniLM-L6-v2 for embeddings. faiss-cpu or
+chromadb for retrieval.
+Variants
+ID Variant Tier Specific dataset
+T14.1 “Cook with what I have” Tier 1 https://github.com/kanishk307/IndianFoodDatasetGeneration (6,000+ recipes with ingredient lists, cuisine, course,
+diet).
