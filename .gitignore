@@ -1,0 +1,69 @@
+# Python cache and virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+*.pyo
+.venv/
+venv/
+env/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs and local env
+*.log
+.env
+.env.*
+*.local
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Test and coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Large model weights and binaries
+*.pt
+*.pth
+*.onnx
+*.tflite
+*.pb
+*.h5
+*.ckpt
+
+# Dataset and generated outputs
+*.zip
+*.tar
+*.gz
+runs/
+
+# YOLO and training outputs
+**/weights/
+**/results.csv
+**/args.yaml
+
+# Streamlit and app runtime cache
+.streamlit/
+
+# Keep placeholder files that document model locations
+!streamlit_app/assets/PLACE_MODEL_HERE.txt
+
+Food_Ingredient_classification_51
+Fridge-Object-3
+fridge_yolov8s
+runs
+FOOD-INGREDIENTS dataset.v2i.yolo26
+spices.v3i.yolo26
