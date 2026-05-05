@@ -1,4 +1,5 @@
 import os
+import difflib
 import re
 import time
 import streamlit as st
@@ -12,6 +13,7 @@ st.set_page_config(page_title="Indian Recipe Recommender", page_icon="🍛", lay
 
 DATASET_PATH = os.path.join(os.path.dirname(__file__), "..", "Dataset", "IndianFoodDatasetCSV.csv")
 MODEL_NAME = "all-MiniLM-L6-v2"
+SPELLING_CUTOFF = 0.75
 
 
 @st.cache_data
@@ -30,6 +32,44 @@ def load_data():
         + df["Course"]
     )
     return df
+
+
+def tokenize_query(text: str) -> list[str]:
+    return [token.lower() for token in re.findall(r"[a-zA-Z]+", text) if len(token) > 2]
+
+
+@st.cache_data
+def build_search_vocabulary(df: pd.DataFrame) -> tuple[str, ...]:
+    vocabulary = set()
+    source_columns = ["TranslatedRecipeName", "TranslatedIngredients", "Cuisine", "Diet", "Course"]
+    for column in source_columns:
+        for value in df[column].fillna("").astype(str):
+            vocabulary.update(tokenize_query(value))
+    return tuple(sorted(vocabulary))
+
+
+def correct_query(query: str, vocabulary: tuple[str, ...]) -> tuple[str, list[tuple[str, str]]]:
+    tokens = tokenize_query(query)
+    if not tokens:
+        return query, []
+
+    corrected_tokens = []
+    corrections: list[tuple[str, str]] = []
+    for token in tokens:
+        if token in vocabulary:
+            corrected_tokens.append(token)
+            continue
+
+        matches = difflib.get_close_matches(token, vocabulary, n=1, cutoff=SPELLING_CUTOFF)
+        if matches:
+            corrected = matches[0]
+            corrected_tokens.append(corrected)
+            if corrected != token:
+                corrections.append((token, corrected))
+        else:
+            corrected_tokens.append(token)
+
+    return " ".join(corrected_tokens), corrections
 
 
 @st.cache_resource
@@ -70,7 +110,7 @@ def build_faiss_index(embeddings: np.ndarray):
 
 
 def keyword_scores(query: str, df: pd.DataFrame) -> np.ndarray:
-    keywords = [w.lower().strip() for w in query.replace(",", " ").split() if len(w) > 2]
+    keywords = tokenize_query(query)
     if not keywords:
         return np.zeros(len(df))
     return np.array([
@@ -116,7 +156,7 @@ def recommend_faiss(query, df, embeddings, top_k, kw_weight):
 
 
 def make_why(row: pd.Series, query: str) -> str:
-    query_words = set(w.lower() for w in query.replace(",", " ").split() if len(w) > 2)
+    query_words = set(tokenize_query(query))
     matched = [w for w in query_words if w in row["TranslatedIngredients"].lower()]
     parts = []
     if matched:
@@ -132,7 +172,7 @@ def highlight_keywords(text: str, query: str) -> str:
     """Wrap every query keyword in the text with a yellow highlight span."""
     if not query:
         return text
-    keywords = [w.strip() for w in query.replace(",", " ").split() if len(w) > 2]
+    keywords = tokenize_query(query)
     result = text
     for kw in keywords:
         pattern = re.compile(re.escape(kw), re.IGNORECASE)
@@ -207,6 +247,7 @@ else:
 
 # ── Header row ─────────────────────────────────────────────────────────────────
 df = load_data()
+search_vocabulary = build_search_vocabulary(df)
 with st.spinner("Loading embeddings… (first run takes ~30s)"):
     embeddings = compute_embeddings(df["combined_text"].tolist())
 
@@ -287,6 +328,8 @@ with tab_search:
     )
 
     if query:
+        normalized_query, corrections = correct_query(query, search_vocabulary)
+        display_query = normalized_query if normalized_query else query
         mask = pd.Series([True] * len(df), index=df.index)
         if sel_cuisine != "All":
             mask &= df["Cuisine"] == sel_cuisine
@@ -303,9 +346,13 @@ with tab_search:
             st.warning("No recipes match the current filters. Try relaxing them.")
         else:
             if search_mode == "FAISS Index":
-                results, elapsed = recommend_faiss(query, filtered_df, filtered_embs, top_k, kw_weight)
+                results, elapsed = recommend_faiss(display_query, filtered_df, filtered_embs, top_k, kw_weight)
             else:
-                results, elapsed = recommend_brute(query, filtered_df, filtered_embs, top_k, kw_weight)
+                results, elapsed = recommend_brute(display_query, filtered_df, filtered_embs, top_k, kw_weight)
+
+            if corrections:
+                friendly_corrections = ", ".join(f"{wrong}→{right}" for wrong, right in corrections)
+                st.info(f"Showing results for {display_query} after spelling correction: {friendly_corrections}")
 
             if sort_by == "Shortest time":
                 results = results.sort_values(["TotalTimeInMins", "similarity"], ascending=[True, False])
@@ -331,9 +378,9 @@ with tab_search:
             active_filters.append(f"Max time: {max_time} min")
             st.caption("Filters: " + " · ".join(active_filters) + f"  |  Showing {len(results)} of {len(filtered_df):,} matching recipes")
 
-            st.markdown(f"### Top {len(results)} Recipes for *\"{query}\"*")
+            st.markdown(f"### Top {len(results)} Recipes for *\"{display_query}\"*")
             for _, row in results.iterrows():
-                recipe_card(row, query, show_save=True)
+                recipe_card(row, display_query, show_save=True)
     else:
         st.info("Enter ingredients above (e.g. *paneer, tomato, onion*) or click a quick pick to get started.")
 
