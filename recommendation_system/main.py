@@ -115,24 +115,22 @@ def make_why(row: pd.Series, query: str) -> str:
 
 # ── UI ─────────────────────────────────────────────────────────────────────────
 
-st.title("🍛 Indian Recipe Recommender")
-st.markdown("Type ingredients you have (or a dish name) and get ranked recipe suggestions.")
+# Dev tools toggle — top row, title on left, toggle on right
+title_col, dev_col = st.columns([8, 2])
+title_col.title("🍛 Indian Recipe Recommender")
+title_col.markdown("Type ingredients you have (or a dish name) and get ranked recipe suggestions.")
+with dev_col:
+    st.markdown("<div style='padding-top:28px'></div>", unsafe_allow_html=True)
+    dev_mode = st.toggle("🛠 Dev tools", value=False)
 
 df = load_data()
 
 with st.spinner("Loading embeddings… (first run takes ~30s)"):
     embeddings = compute_embeddings(df["combined_text"].tolist())
 
-# ── Sidebar filters ────────────────────────────────────────────────────────────
+# ── Sidebar ────────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.header("Filters")
-
-    search_mode = st.selectbox(
-        "Search method",
-        ["Brute-force (cosine)", "FAISS Index"],
-        help="Brute-force checks every recipe; FAISS uses an optimized index."
-    )
-
     cuisines = ["All"] + sorted(df["Cuisine"].unique().tolist())
     sel_cuisine = st.selectbox("Cuisine", cuisines)
 
@@ -145,21 +143,37 @@ with st.sidebar:
     max_time = st.slider("Max total time (mins)", 0, 300, 120, step=15)
     top_k = st.slider("Number of results", 5, 20, 10)
 
-    st.divider()
-    st.subheader("Scoring")
-    use_keywords = st.toggle(
-        "Keyword boost",
-        value=True,
-        help="Boosts recipes that contain your exact query words in their ingredients."
-    )
-    kw_weight = 0.0
-    if use_keywords:
-        kw_weight = st.slider(
-            "Keyword weight",
-            min_value=0.0, max_value=1.0, value=0.35, step=0.05,
-            help="0 = pure semantic, 1 = pure keyword match. 0.3–0.4 works best."
+    # Dev features — only visible when dev tools is on
+    search_mode = "Brute-force (cosine)"
+    use_keywords = True
+    kw_weight = 0.35
+
+    if dev_mode:
+        st.divider()
+        st.subheader("⚙️ Dev Features")
+
+        search_mode = st.selectbox(
+            "Search method",
+            ["Brute-force (cosine)", "FAISS Index"],
+            help="Brute-force checks every recipe; FAISS uses an optimized index."
         )
-        st.caption(f"Final score = **{1-kw_weight:.0%}** semantic + **{kw_weight:.0%}** keyword")
+
+        st.markdown("**Scoring**")
+        use_keywords = st.toggle(
+            "Keyword boost",
+            value=True,
+            help="Boosts recipes that contain your exact query words in their ingredients."
+        )
+        kw_weight = 0.0
+        if use_keywords:
+            kw_weight = st.slider(
+                "Keyword weight",
+                min_value=0.0, max_value=1.0, value=0.35, step=0.05,
+                help="0 = pure semantic, 1 = pure keyword match. 0.3–0.4 works best."
+            )
+            st.caption(
+                f"Final score = **{1-kw_weight:.0%}** semantic + **{kw_weight:.0%}** keyword"
+            )
 
 # ── Query chips ────────────────────────────────────────────────────────────────
 CHIPS = ["paneer, tomato, onion", "rice, dal", "chicken, spices", "potato, peas", "coconut, mustard"]
@@ -170,7 +184,11 @@ for i, chip in enumerate(CHIPS):
     if chip_cols[i].button(chip, key=f"chip_{i}"):
         chip_query = chip
 
-query = st.text_input("Enter ingredients or dish name", value=chip_query, placeholder="e.g. paneer, tomato, cream")
+query = st.text_input(
+    "Enter ingredients or dish name",
+    value=chip_query,
+    placeholder="e.g. paneer, tomato, cream"
+)
 
 if query:
     mask = pd.Series([True] * len(df), index=df.index)
@@ -182,7 +200,7 @@ if query:
         mask &= df["Course"] == sel_course
     mask &= df["TotalTimeInMins"] <= max_time
 
-    filtered_df = df[mask].reset_index(drop=True)
+    filtered_df   = df[mask].reset_index(drop=True)
     filtered_embs = embeddings[np.where(mask)[0]]
 
     if filtered_df.empty:
@@ -193,12 +211,13 @@ if query:
         else:
             results, elapsed = recommend_brute(query, filtered_df, filtered_embs, top_k, kw_weight)
 
-        # ── Timing banner ──────────────────────────────────────────────────────
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Search method", search_mode.split("(")[0].strip())
-        m2.metric("Recipes searched", f"{len(filtered_df):,}")
-        m3.metric("Query time", f"{elapsed:.1f} ms")
-        m4.metric("Keyword weight", f"{kw_weight:.0%}" if use_keywords else "Off")
+        # ── Dev banner — only shown when dev tools is on ───────────────────────
+        if dev_mode:
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("Search method", search_mode.split("(")[0].strip())
+            m2.metric("Recipes searched", f"{len(filtered_df):,}")
+            m3.metric("Query time", f"{elapsed:.1f} ms")
+            m4.metric("Keyword weight", f"{kw_weight:.0%}" if use_keywords else "Off")
 
         st.markdown(f"### Top {len(results)} Recipes for *\"{query}\"*")
 
