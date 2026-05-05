@@ -1,3 +1,4 @@
+import os
 import time
 import streamlit as st
 import pandas as pd
@@ -8,7 +9,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 st.set_page_config(page_title="Indian Recipe Recommender", page_icon="🍛", layout="wide")
 
-DATASET_PATH = "../Dataset/IndianFoodDatasetCSV.csv"
+DATASET_PATH = os.path.join(os.path.dirname(__file__), "..", "Dataset", "IndianFoodDatasetCSV.csv")
 MODEL_NAME = "all-MiniLM-L6-v2"
 
 
@@ -113,6 +114,10 @@ def make_why(row: pd.Series, query: str) -> str:
     return " · ".join(parts) if parts else "Semantically similar to your query"
 
 
+# ── Session state ──────────────────────────────────────────────────────────────
+if "favourites" not in st.session_state:
+    st.session_state.favourites = {}   # {recipe_name: row_dict}
+
 # ── UI ─────────────────────────────────────────────────────────────────────────
 
 # Dev tools toggle — top row, title on left, toggle on right
@@ -147,6 +152,24 @@ with st.sidebar:
     search_mode = "Brute-force (cosine)"
     use_keywords = True
     kw_weight = 0.35
+
+    # ── Favourites panel ───────────────────────────────────────────────────────
+    st.divider()
+    fav_count = len(st.session_state.favourites)
+    st.subheader(f"❤️ Favourites ({fav_count})")
+    if fav_count == 0:
+        st.caption("Nothing saved yet — hit ♡ on any recipe.")
+    else:
+        for name, fav in list(st.session_state.favourites.items()):
+            with st.expander(name[:38]):
+                st.caption(f"{fav['Cuisine']} · {fav['Diet']}")
+                st.caption(f"⏱ {int(fav['TotalTimeInMins'])} min  ·  {fav['Course']}")
+                if st.button("Remove", key=f"rm_{name}"):
+                    del st.session_state.favourites[name]
+                    st.rerun()
+        if st.button("Clear all", type="secondary"):
+            st.session_state.favourites.clear()
+            st.rerun()
 
     if dev_mode:
         st.divider()
@@ -222,15 +245,28 @@ if query:
         st.markdown(f"### Top {len(results)} Recipes for *\"{query}\"*")
 
         for _, row in results.iterrows():
+            name = row["TranslatedRecipeName"]
+            is_saved = name in st.session_state.favourites
             with st.container(border=True):
                 col1, col2 = st.columns([3, 1])
                 with col1:
-                    st.subheader(row["TranslatedRecipeName"])
+                    st.subheader(name)
                     st.caption(make_why(row, query))
                     with st.expander("Ingredients"):
                         st.write(row["TranslatedIngredients"])
-                    if pd.notna(row.get("URL")) and str(row["URL"]).startswith("http"):
-                        st.markdown(f"[View full recipe ↗]({row['URL']})")
+                    btn_col, link_col = st.columns([1, 3])
+                    with btn_col:
+                        if is_saved:
+                            if st.button("❤️ Saved", key=f"fav_{name}", type="secondary"):
+                                del st.session_state.favourites[name]
+                                st.rerun()
+                        else:
+                            if st.button("🤍 Save", key=f"fav_{name}"):
+                                st.session_state.favourites[name] = row.to_dict()
+                                st.rerun()
+                    with link_col:
+                        if pd.notna(row.get("URL")) and str(row["URL"]).startswith("http"):
+                            st.markdown(f"[View full recipe ↗]({row['URL']})")
                 with col2:
                     st.metric("Match", f"{row['similarity']:.0%}")
                     st.markdown(f"**Cuisine:** {row['Cuisine']}")
