@@ -145,6 +145,22 @@ with st.sidebar:
     max_time = st.slider("Max total time (mins)", 0, 300, 120, step=15)
     top_k = st.slider("Number of results", 5, 20, 10)
 
+    st.divider()
+    st.subheader("Scoring")
+    use_keywords = st.toggle(
+        "Keyword boost",
+        value=True,
+        help="Boosts recipes that contain your exact query words in their ingredients."
+    )
+    kw_weight = 0.0
+    if use_keywords:
+        kw_weight = st.slider(
+            "Keyword weight",
+            min_value=0.0, max_value=1.0, value=0.35, step=0.05,
+            help="0 = pure semantic, 1 = pure keyword match. 0.3–0.4 works best."
+        )
+        st.caption(f"Final score = **{1-kw_weight:.0%}** semantic + **{kw_weight:.0%}** keyword")
+
 # ── Query chips ────────────────────────────────────────────────────────────────
 CHIPS = ["paneer, tomato, onion", "rice, dal", "chicken, spices", "potato, peas", "coconut, mustard"]
 st.markdown("**Quick picks:**")
@@ -173,15 +189,16 @@ if query:
         st.warning("No recipes match the current filters. Try relaxing them.")
     else:
         if search_mode == "FAISS Index":
-            results, elapsed = recommend_faiss(query, filtered_df, filtered_embs, top_k)
+            results, elapsed = recommend_faiss(query, filtered_df, filtered_embs, top_k, kw_weight)
         else:
-            results, elapsed = recommend_brute(query, filtered_df, filtered_embs, top_k)
+            results, elapsed = recommend_brute(query, filtered_df, filtered_embs, top_k, kw_weight)
 
         # ── Timing banner ──────────────────────────────────────────────────────
-        m1, m2, m3 = st.columns(3)
+        m1, m2, m3, m4 = st.columns(4)
         m1.metric("Search method", search_mode.split("(")[0].strip())
         m2.metric("Recipes searched", f"{len(filtered_df):,}")
         m3.metric("Query time", f"{elapsed:.1f} ms")
+        m4.metric("Keyword weight", f"{kw_weight:.0%}" if use_keywords else "Off")
 
         st.markdown(f"### Top {len(results)} Recipes for *\"{query}\"*")
 
