@@ -43,12 +43,21 @@ def compute_embeddings(texts: list[str]) -> np.ndarray:
     return model.encode(texts, show_progress_bar=False, batch_size=64)
 
 
+FAISS_PATH = os.path.join(os.path.dirname(__file__), "recipe_index.faiss")
+
+
 @st.cache_resource
 def build_faiss_index(embeddings: np.ndarray):
+    if os.path.exists(FAISS_PATH):
+        index = faiss.read_index(FAISS_PATH)
+        # notebook saves IVFFlat; app needs FlatIP — rebuild if wrong type
+        if isinstance(index, faiss.IndexFlatIP):
+            return index
     vecs = embeddings.astype("float32").copy()
     faiss.normalize_L2(vecs)
     index = faiss.IndexFlatIP(vecs.shape[1])
     index.add(vecs)
+    faiss.write_index(index, FAISS_PATH)
     return index
 
 
