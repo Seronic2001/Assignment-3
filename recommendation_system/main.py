@@ -46,6 +46,14 @@ def compute_embeddings(texts: list[str]) -> np.ndarray:
 FAISS_PATH = os.path.join(os.path.dirname(__file__), "recipe_index.faiss")
 
 
+def recipe_key(row: pd.Series) -> str:
+    url = str(row.get("URL", "")).strip()
+    if url and url.lower().startswith("http"):
+        return url.lower()
+    name = str(row.get("TranslatedRecipeName", "")).strip()
+    return name.lower()
+
+
 @st.cache_resource
 def build_faiss_index(embeddings: np.ndarray):
     if os.path.exists(FAISS_PATH):
@@ -142,7 +150,8 @@ def highlight_keywords(text: str, query: str) -> str:
 def recipe_card(row, query, show_save=True):
     """Render a single recipe card. Used on both pages."""
     name = row["TranslatedRecipeName"]
-    is_saved = name in st.session_state.favourites
+    key = recipe_key(row)
+    is_saved = key in st.session_state.favourites
     with st.container(border=True):
         col1, col2 = st.columns([3, 1])
         with col1:
@@ -160,16 +169,16 @@ def recipe_card(row, query, show_save=True):
             with btn_col:
                 if show_save:
                     if is_saved:
-                        if st.button("❤️ Saved", key=f"fav_{name}_{query}", type="secondary"):
-                            del st.session_state.favourites[name]
+                        if st.button("❤️ Saved", key=f"fav_{key}", type="secondary"):
+                            del st.session_state.favourites[key]
                             st.rerun()
                     else:
-                        if st.button("🤍 Save", key=f"fav_{name}_{query}"):
-                            st.session_state.favourites[name] = row.to_dict()
+                        if st.button("🤍 Save", key=f"fav_{key}"):
+                            st.session_state.favourites[key] = row.to_dict()
                             st.rerun()
                 else:
-                    if st.button("🗑 Remove", key=f"rm_{name}", type="secondary"):
-                        del st.session_state.favourites[name]
+                    if st.button("🗑 Remove", key=f"rm_{key}", type="secondary"):
+                        del st.session_state.favourites[key]
                         st.rerun()
             with link_col:
                 if pd.notna(row.get("URL")) and str(row["URL"]).startswith("http"):
@@ -189,6 +198,12 @@ def recipe_card(row, query, show_save=True):
 # ── Session state ───────────────────────────────────────────────────────────────
 if "favourites" not in st.session_state:
     st.session_state.favourites = {}
+else:
+    migrated_favourites = {}
+    for _, saved_row in st.session_state.favourites.items():
+        row = pd.Series(saved_row)
+        migrated_favourites[recipe_key(row)] = saved_row
+    st.session_state.favourites = migrated_favourites
 
 # ── Header row ─────────────────────────────────────────────────────────────────
 df = load_data()
@@ -222,6 +237,11 @@ with st.sidebar:
 
     max_time = st.slider("Max total time (mins)", 0, 300, 120, step=15)
     top_k = st.slider("Number of results", 5, 20, 10)
+    sort_by = st.selectbox(
+        "Sort results",
+        ["Most relevant", "Shortest time", "Longest time", "Most servings"],
+        help="Changes the order of the recipes after the search ranking is computed."
+    )
 
     search_mode = "Brute-force (cosine)"
     use_keywords = True
@@ -287,12 +307,29 @@ with tab_search:
             else:
                 results, elapsed = recommend_brute(query, filtered_df, filtered_embs, top_k, kw_weight)
 
+            if sort_by == "Shortest time":
+                results = results.sort_values(["TotalTimeInMins", "similarity"], ascending=[True, False])
+            elif sort_by == "Longest time":
+                results = results.sort_values(["TotalTimeInMins", "similarity"], ascending=[False, False])
+            elif sort_by == "Most servings":
+                results = results.sort_values(["Servings", "similarity"], ascending=[False, False])
+
             if dev_mode:
                 m1, m2, m3, m4 = st.columns(4)
                 m1.metric("Search method", search_mode.split("(")[0].strip())
                 m2.metric("Recipes searched", f"{len(filtered_df):,}")
                 m3.metric("Query time", f"{elapsed:.1f} ms")
                 m4.metric("Keyword weight", f"{kw_weight:.0%}" if use_keywords else "Off")
+
+            active_filters = []
+            if sel_cuisine != "All":
+                active_filters.append(f"Cuisine: {sel_cuisine}")
+            if sel_diet != "All":
+                active_filters.append(f"Diet: {sel_diet}")
+            if sel_course != "All":
+                active_filters.append(f"Course: {sel_course}")
+            active_filters.append(f"Max time: {max_time} min")
+            st.caption("Filters: " + " · ".join(active_filters) + f"  |  Showing {len(results)} of {len(filtered_df):,} matching recipes")
 
             st.markdown(f"### Top {len(results)} Recipes for *\"{query}\"*")
             for _, row in results.iterrows():
@@ -314,5 +351,5 @@ with tab_favs:
             st.session_state.favourites.clear()
             st.rerun()
 
-        for name, saved_row in list(st.session_state.favourites.items()):
+        for _, saved_row in list(st.session_state.favourites.items()):
             recipe_card(pd.Series(saved_row), query="", show_save=False)
