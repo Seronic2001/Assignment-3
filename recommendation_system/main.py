@@ -303,17 +303,6 @@ with st.sidebar:
     use_keywords = True
     kw_weight = 0.35
 
-    # Debug panel - always show
-    st.divider()
-    st.subheader("🐛 Debug")
-    st.markdown(f"**Favourites count:** {len(st.session_state.favourites)}")
-    if st.session_state.favourites:
-        st.markdown("**Saved recipes:**")
-        for key in st.session_state.favourites.keys():
-            st.code(key, language="text")
-    else:
-        st.caption("No favourites saved yet")
-
     if dev_mode:
         st.divider()
         st.subheader("⚙️ Dev Features")
