@@ -78,16 +78,21 @@
   % ── Team details — fill in roll numbers and emails ─────────────────────────
   {\large\textbf{Team Dhurandhar}\par}
   \vspace{0.4cm}
-  \begin{tabular}{ccc}
-    \textbf{Achyutananda Sahoo} & \textbf{Satyajit Priyadarshi} & \textbf{Shubhadeep Mandal} \\
-    \texttt{2025202028} & \texttt{2025101055} & \texttt{2025201054} \\
-  \end{tabular}\\[0.8cm]
+  \begin{tabular}{cc}
+    \textbf{Achyutananda Sahoo} & \textbf{Satyajit Priyadarshi} \\
+    \texttt{2025202028} & \texttt{2025201055} \\
+    \small \texttt{achyutananda.sahoo@students.iiit.ac.in} & \small \texttt{satyajit.priyadarshi@students.iiit.ac.in} \\
+  \end{tabular}\\[0.6cm]
+  \centering
+  \textbf{Shubhadeep Mandal} \\
+  \texttt{2025201056} \\
+  \small \texttt{shubhadeep.mandal@students.iiit.ac.in} \\[0.8cm]
 
   \small
-  \textbf{Repository:} \url{https://github.com/Seronic2001/Assignment-3/tree/recommendation-system} \\[0.4em]
-  \textbf{Live Website:} \url{https://smaia3-assignment-3-team-dhurandhar.streamlit.app/} \\[0.4em]
-  \textbf{Dataset:} \url{https://github.com/kanishk307/IndianFoodDatasetGeneration} \\[5em]
-  \normalsize
+  {\normalsize\href{https://github.com/Seronic2001/Assignment-3/tree/recommendation-system}{Github Repository [CLICK HERE]}\par} \\ [0.4em]
+  {\normalsize\href{https://smaia3-assignment-3-team-dhurandhar.streamlit.app/}{Live Website [CLICK HERE]}\par} \\ [0.4em]
+  {\normalsize\href{https://github.com/kanishk307/IndianFoodDatasetGeneration}{Dataset Link [CLICK HERE]}\par} \\[5em]
+  
 
   \begin{abstract}
     \normalsize
@@ -132,7 +137,7 @@ recipes as dense semantic vectors and retrieving by vector similarity.
 % ─────────────────────────────────────────────────────────────────────────────
 
 We use the \textbf{Indian Food Dataset} available on
-Kaggle (\texttt{kanishk307/6000-indian-food-recipes-dataset}).
+Kaggle - {\normalsize\href{https://github.com/kanishk307/IndianFoodDatasetGeneration}{Dataset Link [CLICK HERE]}\par} \\[5em]
 
 \subsection{Statistics}
 
@@ -542,5 +547,23 @@ cuisine. The key contributions are:
 Future work could integrate ChromaDB for persistent embedding storage,
 add BM25 as a third retrieval signal, and collect implicit user feedback
 (clicks, saves) for personalised re-ranking.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{References}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\begin{enumerate}
+  \item \textbf{FAISS — Facebook AI Similarity Search}\\
+        \url{https://github.com/facebookresearch/faiss}\\
+        A library for efficient similarity search and clustering of dense vectors.
+  
+  \item \textbf{Indian Food Dataset — Kaggle}\\
+        \url{https://github.com/kanishk307/IndianFoodDatasetGeneration}\\
+        6,000+ Indian recipes with ingredients, cuisine, diet, and time metadata.
+
+  \item \textbf{Sentence Transformers — all-MiniLM-L6-v2}\\
+        \url{https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2}\\
+        Lightweight pre-trained 384-dimensional sentence embedding model.
+\end{enumerate}
 
 \end{document}

@@ -302,6 +302,7 @@ with st.sidebar:
     search_mode = "Brute-force (cosine)"
     use_keywords = True
     kw_weight = 0.35
+    min_match_threshold = 0.20
 
     if dev_mode:
         st.divider()
@@ -323,6 +324,11 @@ with st.sidebar:
                 help="0 = pure semantic, 1 = pure keyword. 0.3–0.4 works best."
             )
             st.caption(f"Final score = **{1-kw_weight:.0%}** semantic + **{kw_weight:.0%}** keyword")
+        st.markdown("**Filtering**")
+        min_match_threshold = st.slider(
+            "Min match threshold", 0.0, 1.0, 0.20, 0.05,
+            help="Only show recipes with match score >= this threshold."
+        )
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 1 — Recommender
@@ -385,6 +391,9 @@ with tab_search:
             elif sort_by == "Most servings":
                 results = results.sort_values(["Servings", "similarity"], ascending=[False, False])
 
+            # Apply minimum match threshold
+            results = results[results["similarity"] >= min_match_threshold].reset_index(drop=True)
+
             if dev_mode:
                 m1, m2, m3, m4 = st.columns(4)
                 m1.metric("Search method", search_mode.split("(")[0].strip())
@@ -400,11 +409,15 @@ with tab_search:
             if sel_course != "All":
                 active_filters.append(f"Course: {sel_course}")
             active_filters.append(f"Max time: {max_time} min")
+            active_filters.append(f"Min match: {min_match_threshold:.0%}")
             st.caption("Filters: " + " · ".join(active_filters) + f"  |  Showing {len(results)} of {len(filtered_df):,} matching recipes")
 
-            st.markdown(f"### Top {len(results)} Recipes for *\"{display_query}\"*")
-            for _, row in results.iterrows():
-                recipe_card(row, display_query, show_save=True)
+            if len(results) == 0:
+                st.warning(f"No recipes found.")
+            else:
+                st.markdown(f"### Top {len(results)} Recipes for *\"{display_query}\"*")
+                for _, row in results.iterrows():
+                    recipe_card(row, display_query, show_save=True)
     else:
         st.info("Enter ingredients above (e.g. *paneer, tomato, onion*) or click a quick pick to get started.")
 
