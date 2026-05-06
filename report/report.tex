@@ -73,27 +73,21 @@
   \vspace{0.5cm}
   {\Large\color{accent} T14.1 — Cook with What I Have\par}
   {\large Personalised Indian Recipe Recommender\par}
-  \vspace{1.5cm}
-  \rule{\linewidth}{0.4pt}\\[0.8cm]
+  \vspace{1cm}
 
   % ── Team details — fill in roll numbers and emails ─────────────────────────
-  \begin{tabular}{ll}
-    \textbf{Name} & Achyutananda Sahoo \\
-    \textbf{Roll Number} & \texttt{[ROLL NUMBER]} \\
-    \textbf{Email} & \texttt{achu23022002@gmail.com} \\[0.8em]
-    % Add teammates below if applicable:
-    % \textbf{Name} & Teammate 2 \\
-    % \textbf{Roll Number} & \texttt{[ROLL NUMBER]} \\
-    % \textbf{Email} & \texttt{[EMAIL]} \\
+  {\large\textbf{Team Dhurandhar}\par}
+  \vspace{0.4cm}
+  \begin{tabular}{ccc}
+    \textbf{Achyutananda Sahoo} & \textbf{Satyajit Priyadarshi} & \textbf{Shubhadeep Mandal} \\
+    \texttt{2025202028} & \texttt{2025101055} & \texttt{2025201054} \\
   \end{tabular}\\[0.8cm]
-  \rule{\linewidth}{0.4pt}\\[0.8cm]
 
-  {\large International Institute of Information Technology, Hyderabad\par}
-  \vspace{0.4cm}
-  {\large Statistical Methods in AI\par}
-  \vspace{0.4cm}
-  {\large May 2026\par}
-  \vspace{2cm}
+  \small
+  \textbf{Repository:} \url{https://github.com/Seronic2001/Assignment-3/tree/recommendation-system} \\[0.4em]
+  \textbf{Live Website:} \url{https://smaia3-assignment-3-team-dhurandhar.streamlit.app/} \\[0.4em]
+  \textbf{Dataset:} \url{https://github.com/kanishk307/IndianFoodDatasetGeneration} \\[5em]
+  \normalsize
 
   \begin{abstract}
     \normalsize
@@ -137,7 +131,7 @@ recipes as dense semantic vectors and retrieving by vector similarity.
 \section{Dataset}
 % ─────────────────────────────────────────────────────────────────────────────
 
-We use the \textbf{Indian Food Dataset} \cite{kaggle_dataset}, available on
+We use the \textbf{Indian Food Dataset} available on
 Kaggle (\texttt{kanishk307/6000-indian-food-recipes-dataset}).
 
 \subsection{Statistics}
@@ -260,7 +254,7 @@ semantically relevant fields simultaneously.
 \subsection{Step 1 — Sentence Embeddings}
 
 We use the pre-trained \textbf{\texttt{all-MiniLM-L6-v2}} model from the
-\texttt{sentence-transformers} library \cite{sbert}. It maps any text string to
+\texttt{sentence-transformers} library. It maps any text string to
 a dense vector in $\mathbb{R}^{384}$:
 
 \begin{equation}
@@ -316,7 +310,7 @@ described in Section~\ref{sec:hybrid}.
 
 Computing $\text{sim}_{\cos}(\mathbf{q}, \mathbf{e}_i)$ for all $N$ recipes is
 $O(N \cdot d)$ per query. For large corpora this becomes a bottleneck.
-\textbf{FAISS} (Facebook AI Similarity Search) \cite{faiss} provides
+\textbf{FAISS} (Facebook AI Similarity Search) provides
 CPU-optimised exact and approximate nearest-neighbour search.
 
 \subsubsection{L2 Normalisation Trick}
@@ -436,8 +430,8 @@ For the query \textit{``fish, onion''}:
 % ── Screenshot placeholder ────────────────────────────────────────────────────
 \begin{figure}[H]
   \centering
-  \includegraphics[width=1\textwidth]{image.png}
-  \caption{Ranked Cards - query : "fish, onion"}
+  \includegraphics[width=1\textwidth]{metrics1.png}
+  \caption{Ranked recipes - query : "fish, onion"}
 \end{figure}
 
 
@@ -484,11 +478,10 @@ button wipes the list.
 % ── Screenshot placeholder ────────────────────────────────────────────────────
 \begin{figure}[H]
   \centering
-  \fbox{\begin{minipage}{0.85\textwidth}\centering\vspace{3cm}
-    \textit{[Screenshot: Favourites tab showing saved recipe cards]}
-  \vspace{3cm}\end{minipage}}
-  \caption{Favourites tab}
+  \includegraphics[width=1\textwidth]{fav.png}
+  \caption{Favorites Tab} 
 \end{figure}
+
 
 \subsection{Dev Tools Panel}
 
@@ -505,7 +498,7 @@ A toggle in the top-right corner reveals the developer panel:
 % ── Screenshot placeholder ────────────────────────────────────────────────────
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.35\textwidth]{dev_tools.png}
+  \includegraphics[width=0.45\textwidth]{dev_tools.png}
   \caption{Recommender tab}
 \end{figure}
 
@@ -549,34 +542,5 @@ cuisine. The key contributions are:
 Future work could integrate ChromaDB for persistent embedding storage,
 add BM25 as a third retrieval signal, and collect implicit user feedback
 (clicks, saves) for personalised re-ranking.
-
-% ─────────────────────────────────────────────────────────────────────────────
-\begin{thebibliography}{9}
-
-\bibitem{kaggle_dataset}
-  Kanishk307,
-  \textit{6000 Indian Food Recipes Dataset},
-  Kaggle, 2022.
-  \url{https://www.kaggle.com/datasets/kanishk307/6000-indian-food-recipes-dataset}
-
-\bibitem{sbert}
-  N.\ Reimers and I.\ Gurevych,
-  \textit{Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks},
-  EMNLP 2019.
-  \url{https://arxiv.org/abs/1908.10084}
-
-\bibitem{faiss}
-  J.\ Johnson, M.\ Douze, and H.\ Jégou,
-  \textit{Billion-scale similarity search with GPUs},
-  IEEE Transactions on Big Data, 2019.
-  \url{https://arxiv.org/abs/1702.08734}
-
-\bibitem{miniLM}
-  W.\ Wang et al.,
-  \textit{MiniLM: Deep Self-Attention Distillation for Task-Agnostic
-  Compression of Pre-Trained Transformers},
-  NeurIPS 2020.
-
-\end{thebibliography}
 
 \end{document}
