@@ -276,8 +276,8 @@ with dev_col:
 # ── Navbar tabs ────────────────────────────────────────────────────────────────
 tab_search, tab_favs = st.tabs([
     "🔍 Recommender",
-    f"❤️ Favourites ({len(st.session_state.favourites)})",
-])
+    "❤️ Favourites",
+], key="main_tabs")
 
 # ── Sidebar (filters + dev, only relevant on search tab) ───────────────────────
 with st.sidebar:
