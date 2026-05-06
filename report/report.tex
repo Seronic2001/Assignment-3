@@ -374,16 +374,6 @@ $n_{\text{probe}}$ nearest cells are searched:
   \caption{Search speed and accuracy comparison}
 \end{table}
 
-% ── Screenshot placeholder ────────────────────────────────────────────────────
-\begin{figure}[H]
-  \centering
-  \fbox{\begin{minipage}{0.85\textwidth}\centering\vspace{3cm}
-    \textit{[Screenshot: FAISS cluster visualisation — PCA 2D projection\\
-    coloured by cluster assignment, centroids annotated with dominant cuisine]}
-  \vspace{3cm}\end{minipage}}
-  \caption{IVF cluster visualisation (top-20 clusters shown)}
-\end{figure}
-
 \subsection{Step 4 — Hybrid Scoring}
 \label{sec:hybrid}
 
@@ -446,12 +436,10 @@ For the query \textit{``fish, onion''}:
 % ── Screenshot placeholder ────────────────────────────────────────────────────
 \begin{figure}[H]
   \centering
-  \fbox{\begin{minipage}{0.85\textwidth}\centering\vspace{3cm}
-    \textit{[Screenshot: stacked bar chart — score decomposition showing\\
-    semantic contribution vs.\ keyword contribution per recipe]}
-  \vspace{3cm}\end{minipage}}
-  \caption{Score decomposition for query ``fish, onion'' at $w=0.35$}
+  \includegraphics[width=1\textwidth]{image.png}
+  \caption{Ranked Cards - query : "fish, onion"}
 \end{figure}
+
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Streamlit Application}
@@ -476,12 +464,16 @@ pages.
 % ── Screenshot placeholder ────────────────────────────────────────────────────
 \begin{figure}[H]
   \centering
-  \fbox{\begin{minipage}{0.85\textwidth}\centering\vspace{4cm}
-    \textit{[Screenshot: Streamlit app — Recommender tab with search results,\\
-    highlighted ingredients, and Save buttons]}
-  \vspace{4cm}\end{minipage}}
-  \caption{Recommender tab — search results for ``paneer, tomato, cream''}
+  \includegraphics[width=1\textwidth]{home.png}
+  \caption{Recommender tab}
 \end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{ranked_cards.png}
+  \caption{Ranked Cards - query : "fish, onion"}
+\end{figure}
+
 
 \subsection{Favourites Page}
 
@@ -513,63 +505,10 @@ A toggle in the top-right corner reveals the developer panel:
 % ── Screenshot placeholder ────────────────────────────────────────────────────
 \begin{figure}[H]
   \centering
-  \fbox{\begin{minipage}{0.85\textwidth}\centering\vspace{3cm}
-    \textit{[Screenshot: sidebar with Dev Features section open,\\
-    showing search method dropdown, keyword boost toggle, weight slider,\\
-    and the 4-metric dev banner above results]}
-  \vspace{3cm}\end{minipage}}
-  \caption{Developer tools panel}
+  \includegraphics[width=0.35\textwidth]{dev_tools.png}
+  \caption{Recommender tab}
 \end{figure}
 
-% ─────────────────────────────────────────────────────────────────────────────
-\section{Performance Evaluation}
-% ─────────────────────────────────────────────────────────────────────────────
-
-Since no user rating data is available, we evaluate using proxy metrics
-computable from the dataset itself.
-
-\subsection{Metrics}
-
-\paragraph{Ingredient Recall@K}
-Given a query with ingredients $K$, the fraction of top-$K$ results that
-contain at least one queried ingredient:
-\begin{equation}
-  \text{IngRecall@K} = \frac{1}{K}\sum_{i \in \mathcal{R}_K}
-  \mathbf{1}\!\left[|K \cap I_i| > 0\right]
-\end{equation}
-
-\paragraph{Leave-one-out Hit Rate@K}
-For each recipe, use its own ingredient list as the query and check whether it
-appears in the top-$K$ results:
-\begin{equation}
-  \text{HR@K} = \frac{1}{N}\sum_{i=1}^N
-  \mathbf{1}\!\left[i \in \mathcal{R}_K\!\left(\text{ingredients}_i\right)\right]
-\end{equation}
-
-\paragraph{Mean Reciprocal Rank (MRR)}
-\begin{equation}
-  \text{MRR} = \frac{1}{N}\sum_{i=1}^{N} \frac{1}{\text{rank}_i}
-\end{equation}
-where $\text{rank}_i$ is the position of recipe $i$ in its own self-query result list.
-
-\paragraph{Intra-list Diversity}
-Average pairwise cosine \emph{distance} within the top-$K$ result set:
-\begin{equation}
-  \text{Diversity@K} = \frac{2}{K(K-1)} \sum_{i < j,\; i,j \in \mathcal{R}_K}
-  \left(1 - \text{sim}_{\cos}(\mathbf{e}_i, \mathbf{e}_j)\right)
-\end{equation}
-
-% ── Screenshot placeholder ────────────────────────────────────────────────────
-\begin{figure}[H]
-  \centering
-  \fbox{\begin{minipage}{0.85\textwidth}\centering\vspace{3cm}
-    \textit{[Screenshot / table: evaluation results — Hit Rate@10, MRR,\\
-    Ingredient Recall@10 for brute-force vs.\ hybrid scoring]}
-  \vspace{3cm}\end{minipage}}
-  \caption{Evaluation metrics comparison}
-\end{figure}
-
-% ─────────────────────────────────────────────────────────────────────────────
 \section{Repository Structure}
 % ─────────────────────────────────────────────────────────────────────────────
 

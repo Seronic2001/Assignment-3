@@ -1,2 +1,8 @@
 faiss-cpu
-sentence_transformers
+sentence-transformers
+streamlit
+pandas
+numpy
+scikit-learn
+torch
+torchvision

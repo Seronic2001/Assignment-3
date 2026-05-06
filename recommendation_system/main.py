@@ -2,6 +2,7 @@ import os
 import difflib
 import re
 import time
+import hashlib
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -92,6 +93,11 @@ def recipe_key(row: pd.Series) -> str:
         return url.lower()
     name = str(row.get("TranslatedRecipeName", "")).strip()
     return name.lower()
+
+
+def safe_button_key(key: str) -> str:
+    """Convert any key to a safe Streamlit button key using MD5 hash."""
+    return hashlib.md5(key.encode()).hexdigest()[:16]
 
 
 @st.cache_resource
@@ -187,10 +193,10 @@ def highlight_keywords(text: str, query: str) -> str:
     return result
 
 
-def recipe_card(row, query, show_save=True):
+def recipe_card(row, query, show_save=True, fav_key=None):
     """Render a single recipe card. Used on both pages."""
     name = row["TranslatedRecipeName"]
-    key = recipe_key(row)
+    key = fav_key if fav_key is not None else recipe_key(row)
     is_saved = key in st.session_state.favourites
     with st.container(border=True):
         col1, col2 = st.columns([3, 1])
@@ -209,15 +215,15 @@ def recipe_card(row, query, show_save=True):
             with btn_col:
                 if show_save:
                     if is_saved:
-                        if st.button("❤️ Saved", key=f"fav_{key}", type="secondary"):
+                        if st.button("❤️ Saved", key=f"fav_{safe_button_key(key)}", type="secondary"):
                             del st.session_state.favourites[key]
                             st.rerun()
                     else:
-                        if st.button("🤍 Save", key=f"fav_{key}"):
+                        if st.button("🤍 Save", key=f"fav_{safe_button_key(key)}"):
                             st.session_state.favourites[key] = row.to_dict()
                             st.rerun()
                 else:
-                    if st.button("🗑 Remove", key=f"rm_{key}", type="secondary"):
+                    if st.button("🗑 Remove", key=f"rm_{safe_button_key(key)}", type="secondary"):
                         del st.session_state.favourites[key]
                         st.rerun()
             with link_col:
@@ -240,9 +246,10 @@ if "favourites" not in st.session_state:
     st.session_state.favourites = {}
 else:
     migrated_favourites = {}
-    for _, saved_row in st.session_state.favourites.items():
+    for orig_key, saved_row in st.session_state.favourites.items():
         row = pd.Series(saved_row)
-        migrated_favourites[recipe_key(row)] = saved_row
+        new_key = recipe_key(row)
+        migrated_favourites[new_key] = saved_row
     st.session_state.favourites = migrated_favourites
 
 # ── Header row ─────────────────────────────────────────────────────────────────
@@ -258,10 +265,9 @@ with dev_col:
     dev_mode = st.toggle("🛠 Dev tools", value=False)
 
 # ── Navbar tabs ────────────────────────────────────────────────────────────────
-fav_count = len(st.session_state.favourites)
 tab_search, tab_favs = st.tabs([
     "🔍 Recommender",
-    f"❤️ Favourites ({fav_count})",
+    f"❤️ Favourites ({len(st.session_state.favourites)})",
 ])
 
 # ── Sidebar (filters + dev, only relevant on search tab) ───────────────────────
@@ -388,15 +394,15 @@ with tab_search:
 # TAB 2 — Favourites
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_favs:
-    if fav_count == 0:
+    if len(st.session_state.favourites) == 0:
         st.markdown("### No favourites yet")
         st.info("Head to the Recommender tab, search for something, and hit 🤍 Save on any recipe.")
     else:
         hdr_col, clr_col = st.columns([6, 1])
-        hdr_col.markdown(f"### Your saved recipes ({fav_count})")
+        hdr_col.markdown(f"### Your saved recipes ({len(st.session_state.favourites)})")
         if clr_col.button("Clear all", type="secondary"):
             st.session_state.favourites.clear()
             st.rerun()
 
-        for _, saved_row in list(st.session_state.favourites.items()):
-            recipe_card(pd.Series(saved_row), query="", show_save=False)
+        for fav_key, saved_row in list(st.session_state.favourites.items()):
+            recipe_card(pd.Series(saved_row), query="", show_save=False, fav_key=fav_key)
