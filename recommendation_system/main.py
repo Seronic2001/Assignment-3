@@ -216,11 +216,16 @@ def recipe_card(row, query, show_save=True, fav_key=None):
                 if show_save:
                     if is_saved:
                         if st.button("❤️ Saved", key=f"fav_{safe_button_key(key)}", type="secondary"):
+                            print(f"[UNSAVE] Removing {key}")
                             del st.session_state.favourites[key]
+                            st.success("Removed from favourites!", icon="✅")
                             st.rerun()
                     else:
                         if st.button("🤍 Save", key=f"fav_{safe_button_key(key)}"):
+                            print(f"[SAVE] Saving with key={key}")
                             st.session_state.favourites[key] = row.to_dict()
+                            print(f"[SAVE] After save, favourites keys: {list(st.session_state.favourites.keys())}")
+                            st.success("Saved to favourites!", icon="❤️")
                             st.rerun()
                 else:
                     if st.button("🗑 Remove", key=f"rm_{safe_button_key(key)}", type="secondary"):
@@ -244,13 +249,17 @@ def recipe_card(row, query, show_save=True, fav_key=None):
 # ── Session state ───────────────────────────────────────────────────────────────
 if "favourites" not in st.session_state:
     st.session_state.favourites = {}
+    print(f"[INIT] Created new favourites: {st.session_state.favourites}")
 else:
+    print(f"[LOAD] Loaded favourites before migration: {list(st.session_state.favourites.keys())}")
     migrated_favourites = {}
     for orig_key, saved_row in st.session_state.favourites.items():
         row = pd.Series(saved_row)
         new_key = recipe_key(row)
+        print(f"[MIGRATE] orig_key={orig_key} -> new_key={new_key}")
         migrated_favourites[new_key] = saved_row
     st.session_state.favourites = migrated_favourites
+    print(f"[LOAD] Loaded favourites after migration: {list(st.session_state.favourites.keys())}")
 
 # ── Header row ─────────────────────────────────────────────────────────────────
 df = load_data()
@@ -294,6 +303,17 @@ with st.sidebar:
     use_keywords = True
     kw_weight = 0.35
 
+    # Debug panel - always show
+    st.divider()
+    st.subheader("🐛 Debug")
+    st.markdown(f"**Favourites count:** {len(st.session_state.favourites)}")
+    if st.session_state.favourites:
+        st.markdown("**Saved recipes:**")
+        for key in st.session_state.favourites.keys():
+            st.code(key, language="text")
+    else:
+        st.caption("No favourites saved yet")
+
     if dev_mode:
         st.divider()
         st.subheader("⚙️ Dev Features")
@@ -319,19 +339,28 @@ with st.sidebar:
 # TAB 1 — Recommender
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_search:
+    # Initialize chip_query in session state
+    if "chip_query" not in st.session_state:
+        st.session_state.chip_query = ""
+    
     CHIPS = ["paneer, tomato, onion", "rice, dal", "chicken, spices", "potato, peas", "coconut, mustard"]
     st.markdown("**Quick picks:**")
     chip_cols = st.columns(len(CHIPS))
-    chip_query = ""
+    
     for i, chip in enumerate(CHIPS):
         if chip_cols[i].button(chip, key=f"chip_{i}"):
-            chip_query = chip
+            st.session_state.chip_query = chip
+            print(f"[CHIP] Selected: {chip}")
 
     query = st.text_input(
         "Enter ingredients or dish name",
-        value=chip_query,
+        value=st.session_state.chip_query,
         placeholder="e.g. paneer, tomato, cream"
     )
+    
+    # Update session state when user types
+    if query != st.session_state.chip_query:
+        st.session_state.chip_query = query
 
     if query:
         normalized_query, corrections = correct_query(query, search_vocabulary)
